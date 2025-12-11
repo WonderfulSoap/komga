@@ -55,6 +55,18 @@ jobs:
           docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" -f- . <<'EOF'
           FROM nginx:stable-alpine
           COPY komga-webui/dist/ /usr/share/nginx/html
+          RUN cat <<'NGINX' > /etc/nginx/conf.d/default.conf
+          server {
+            listen 80;
+            listen [::]:80;
+            server_name _;
+            root /usr/share/nginx/html;
+
+            location / {
+              try_files $uri $uri/ /index.html;
+            }
+          }
+          NGINX
           EOF
           docker push "$IMAGE:$TAG"
           docker push "$IMAGE:latest"
