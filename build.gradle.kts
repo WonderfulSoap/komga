@@ -170,9 +170,9 @@ jreleaser {
       buildArgs = listOf("--cache-from", "gotson/komga:latest")
       imageNames =
         listOf(
-          "komga:latest",
-          "komga:{{projectVersion}}",
-          "komga:{{projectVersionMajor}}.x",
+          "wondersoap/komga:latest",
+          "wondersoap/komga:{{projectVersion}}",
+          "wondersoap/komga:{{projectVersionMajor}}.x",
         )
       registries {
         create("docker.io") { externalLogin = true }
