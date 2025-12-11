@@ -320,11 +320,11 @@ const router = new Router({
   ],
   scrollBehavior(to, from, savedPosition) {
     // Debug scroll restore
-    console.debug('[scrollBehavior] to:', to.name, JSON.stringify(to.params), 'from:', from.name, JSON.stringify(from.params), 'savedPosition:', JSON.stringify(savedPosition))
+    // console.debug('[scrollBehavior] to:', to.name, JSON.stringify(to.params), 'from:', from.name, JSON.stringify(from.params), 'savedPosition:', JSON.stringify(savedPosition))
     const targetPosition = (() => {
       if (scrollMemoryRoutes.has(to.name as string)) {
         const manualPosition = savedScrollPositions[getScrollKey(to)]
-        console.debug('[scrollBehavior] manual position lookup', getScrollKey(to), manualPosition)
+        // console.debug('[scrollBehavior] manual position lookup', getScrollKey(to), manualPosition)
         if (typeof manualPosition === 'number') return manualPosition
       }
       if (to.name === from.name && to.fullPath !== from.fullPath) return 0
@@ -341,16 +341,16 @@ const router = new Router({
         const scrollableHeight = el ? el.scrollHeight - el.clientHeight : document.documentElement.scrollHeight - window.innerHeight
 
         if (scrollableHeight < targetPosition && attempt < 10) {
-          console.debug('[scrollBehavior] wait content', {attempt, scrollableHeight, targetPosition})
+          // console.debug('[scrollBehavior] wait content', {attempt, scrollableHeight, targetPosition})
           setTimeout(() => applyScroll(attempt + 1), 50)
           return
         }
 
         if (el) {
-          console.debug('[scrollBehavior] applying scroll to container', el.className, '->', targetPosition)
+          // console.debug('[scrollBehavior] applying scroll to container', el.className, '->', targetPosition)
           el.scrollTo({top: targetPosition, behavior: 'auto'})
         } else {
-          console.debug('[scrollBehavior] applying scroll to window ->', targetPosition)
+          // console.debug('[scrollBehavior] applying scroll to window ->', targetPosition)
           window.scrollTo({top: targetPosition, left: 0})
         }
         // make sure both scroll targets are in sync
@@ -367,14 +367,14 @@ router.beforeEach((to, from, next) => {
   if (scrollMemoryRoutes.has(from.name as string)) {
     if (sameRouteDifferentPath) {
       delete savedScrollPositions[getScrollKey(from)]
-      console.debug('[scrollMemory] clear (pagination)', getScrollKey(from))
+      // console.debug('[scrollMemory] clear (pagination)', getScrollKey(from))
     } else {
       const current = getCurrentScroll()
       savedScrollPositions[getScrollKey(from)] = current
-      console.debug('[scrollMemory] save', getScrollKey(from), '=>', current, 'container:', getScrollElement()?.className)
+      // console.debug('[scrollMemory] save', getScrollKey(from), '=>', current, 'container:', getScrollElement()?.className)
     }
   }
-  console.debug('[scrollMemory] to:', to.name, 'from:', from.name, 'savedKeys:', JSON.stringify(Object.keys(savedScrollPositions)))
+  // console.debug('[scrollMemory] to:', to.name, 'from:', from.name, 'savedKeys:', JSON.stringify(Object.keys(savedScrollPositions)))
 
   // avoid document.title flickering when changing route
   if (!['read-book', 'read-epub', 'browse-book', 'browse-oneshot', 'browse-series', 'browse-libraries', 'browse-books',
