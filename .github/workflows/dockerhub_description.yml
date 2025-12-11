@@ -9,6 +9,7 @@ on:
 
 jobs:
   update_docker_description:
+    if: false
     name: Update DockerHub description
     runs-on: ubuntu-latest
     

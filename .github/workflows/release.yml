@@ -37,6 +37,7 @@ on:
 
 jobs:
   version:
+    if: false
     runs-on: macos-latest
     outputs:
       version_current: ${{ steps.versions.outputs.version_current }}
