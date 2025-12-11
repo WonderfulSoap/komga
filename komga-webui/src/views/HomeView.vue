@@ -365,7 +365,9 @@
     <v-main class="fill-height">
       <reusable-dialogs/>
       <toaster-notification/>
-      <router-view/>
+      <keep-alive include="BrowseLibraries,BrowseBooks,BrowseCollections,BrowseReadLists">
+        <router-view/>
+      </keep-alive>
     </v-main>
   </div>
 </template>
