@@ -1,6 +1,6 @@
 <template>
   <v-scroll-y-transition hide-on-leave>
-    <toolbar-sticky v-if="value.length > 0" :elevation="5" color="base">
+    <toolbar-sticky v-if="value.length > 0" :elevation="5" color="base" wrap-content>
       <v-btn icon @click="unselectAll">
         <v-tooltip bottom>
           <template v-slot:activator="{ on }">

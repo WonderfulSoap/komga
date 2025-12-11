@@ -1,7 +1,7 @@
 <template>
   <v-toolbar flat
              :color="color"
-             class="sticky-bar"
+             :class="['sticky-bar', {'sticky-bar--wrap': wrapContent}]"
              :style="barStyle"
              :elevation="elevation"
   >
@@ -32,6 +32,10 @@ export default Vue.extend({
       type: String,
       default: 'contrast-1',
     },
+    wrapContent: {
+      type: Boolean,
+      default: false,
+    },
   },
 })
 </script>
@@ -41,5 +45,13 @@ export default Vue.extend({
   position: -webkit-sticky;
   position: sticky;
   z-index: 2
+}
+.sticky-bar--wrap :deep(.v-toolbar__content) {
+  flex-wrap: wrap;
+  height: auto !important;
+}
+.sticky-bar--wrap {
+  height: auto !important;
+  min-height: 0;
 }
 </style>
