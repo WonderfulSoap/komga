@@ -200,9 +200,9 @@ export default Vue.extend({
     paginationVisible(): number {
       switch (this.$vuetify.breakpoint.name) {
         case 'xs':
+          return 7
         case 'sm':
         case 'md':
-          return 5
         case 'lg':
           return 10
         case 'xl':

@@ -537,7 +537,7 @@ export default Vue.extend({
     paginationVisible(): number {
       switch (this.$vuetify.breakpoint.name) {
         case 'xs':
-          return 5
+          return 7
         case 'sm':
         case 'md':
           return 10
