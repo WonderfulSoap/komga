@@ -9,6 +9,27 @@ const qs = require('qs')
 Vue.use(Router)
 
 const lStore = store as any
+const scrollMemoryRoutes = new Set<string>([
+  'browse-libraries',
+  'browse-books',
+  'browse-collections',
+  'browse-readlists',
+  'browse-collection',
+  'browse-readlist',
+  'browse-series',
+])
+const savedScrollPositions: Record<string, number> = {}
+const getScrollKey = (route: any) => `${route?.name || route?.path}:${JSON.stringify(route?.params || {})}:${route?.fullPath || ''}`
+const getScrollElement = (): HTMLElement | null => {
+  // Vuetify 2 scroll container; fallback to document scrolling element
+  return document.querySelector('.v-main__wrap') as HTMLElement || document.scrollingElement as HTMLElement || null
+}
+const getCurrentScroll = (): number => {
+  const el = getScrollElement()
+  const containerScroll = el ? el.scrollTop : 0
+  const windowScroll = window.pageYOffset || 0
+  return Math.max(containerScroll, windowScroll)
+}
 
 const adminGuard = (to: any, from: any, next: any) => {
   if (!lStore.getters.meAdmin) next({name: 'home'})
@@ -298,17 +319,63 @@ const router = new Router({
     },
   ],
   scrollBehavior(to, from, savedPosition) {
-    if (savedPosition) {
-      return savedPosition
-    } else {
-      if (to.name !== from.name) {
-        return {x: 0, y: 0}
+    // Debug scroll restore
+    console.debug('[scrollBehavior] to:', to.name, JSON.stringify(to.params), 'from:', from.name, JSON.stringify(from.params), 'savedPosition:', JSON.stringify(savedPosition))
+    const targetPosition = (() => {
+      if (scrollMemoryRoutes.has(to.name as string)) {
+        const manualPosition = savedScrollPositions[getScrollKey(to)]
+        console.debug('[scrollBehavior] manual position lookup', getScrollKey(to), manualPosition)
+        if (typeof manualPosition === 'number') return manualPosition
       }
-    }
+      if (to.name === from.name && to.fullPath !== from.fullPath) return 0
+      if (savedPosition) return savedPosition.y
+      if (to.name !== from.name) return 0
+      return undefined
+    })()
+
+    if (typeof targetPosition !== 'number') return
+
+    return new Promise((resolve) => {
+      const applyScroll = (attempt: number) => {
+        const el = getScrollElement()
+        const scrollableHeight = el ? el.scrollHeight - el.clientHeight : document.documentElement.scrollHeight - window.innerHeight
+
+        if (scrollableHeight < targetPosition && attempt < 10) {
+          console.debug('[scrollBehavior] wait content', {attempt, scrollableHeight, targetPosition})
+          setTimeout(() => applyScroll(attempt + 1), 50)
+          return
+        }
+
+        if (el) {
+          console.debug('[scrollBehavior] applying scroll to container', el.className, '->', targetPosition)
+          el.scrollTo({top: targetPosition, behavior: 'auto'})
+        } else {
+          console.debug('[scrollBehavior] applying scroll to window ->', targetPosition)
+          window.scrollTo({top: targetPosition, left: 0})
+        }
+        // make sure both scroll targets are in sync
+        window.scrollTo({top: targetPosition, left: 0})
+        resolve({x: 0, y: targetPosition})
+      }
+      Vue.nextTick(() => applyScroll(0))
+    })
   },
 })
 
 router.beforeEach((to, from, next) => {
+  const sameRouteDifferentPath = to.name === from.name && to.fullPath !== from.fullPath
+  if (scrollMemoryRoutes.has(from.name as string)) {
+    if (sameRouteDifferentPath) {
+      delete savedScrollPositions[getScrollKey(from)]
+      console.debug('[scrollMemory] clear (pagination)', getScrollKey(from))
+    } else {
+      const current = getCurrentScroll()
+      savedScrollPositions[getScrollKey(from)] = current
+      console.debug('[scrollMemory] save', getScrollKey(from), '=>', current, 'container:', getScrollElement()?.className)
+    }
+  }
+  console.debug('[scrollMemory] to:', to.name, 'from:', from.name, 'savedKeys:', JSON.stringify(Object.keys(savedScrollPositions)))
+
   // avoid document.title flickering when changing route
   if (!['read-book', 'read-epub', 'browse-book', 'browse-oneshot', 'browse-series', 'browse-libraries', 'browse-books',
     'recommended-libraries', 'browse-collection', 'browse-collections', 'browse-readlist', 'browse-readlists'].includes(<string>to.name)
