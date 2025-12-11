@@ -92,6 +92,9 @@ export default Vue.extend({
   watch: {
     value(val) {
       this.modal = val
+      if (val && this.confirmText) {
+        this.confirmation = true
+      }
     },
     modal(val) {
       !val && this.dialogCancel()

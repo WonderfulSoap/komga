@@ -189,9 +189,9 @@
 
 
             <template v-if="$vuetify.breakpoint.smAndUp">
-              <v-row class="align-center">
-                <v-col cols="auto">
-                  <v-btn color="accent"
+              <v-row class="align-center action-buttons-row">
+                <v-col cols="auto" class="action-buttons-row__col">
+                  <v-btn color="primary"
                          small
                          :title="$t('browse_book.read_book')"
                          :to="{name: readRouteName, params: { bookId: bookId}, query: { context: context.origin, contextId: context.id}}"
@@ -202,24 +202,25 @@
                   </v-btn>
                 </v-col>
 
-                <v-col cols="auto">
-                  <v-btn small
-                         :title="$t('browse_book.read_incognito')"
-                         :to="{name: readRouteName, params: { bookId: bookId}, query: { context: context.origin, contextId: context.id, incognito: true}}"
-                         :disabled="!canRead"
+                <v-col cols="auto" class="action-buttons-row__col" v-if="isAdmin">
+                  <v-btn color="error"
+                         small
+                         :title="$t('menu.delete')"
+                         @click="deleteBook"
                   >
-                    <v-icon left small>mdi-incognito</v-icon>
-                    {{ $t('common.read') }}
+                    <v-icon left small>mdi-delete</v-icon>
+                    {{ $t('menu.delete') }}
                   </v-btn>
                 </v-col>
-
-                <v-col cols="auto">
-                  <v-btn :title="$t('browse_book.download_file')"
+                <v-col cols="auto" class="action-buttons-row__col">
+                  <v-btn color="primary"
                          small
-                         :disabled="!canDownload"
-                         :href="fileUrl">
-                    <v-icon left small>mdi-file-download</v-icon>
-                    {{ $t('common.download') }}
+                         :title="$t('browse_book.read_book')"
+                         :to="{name: readRouteName, params: { bookId: bookId}, query: { context: context.origin, contextId: context.id}}"
+                         :disabled="!canRead"
+                  >
+                    <v-icon left small>mdi-book-open-page-variant</v-icon>
+                    {{ $t('common.read') }}
                   </v-btn>
                 </v-col>
               </v-row>
@@ -235,9 +236,9 @@
       </v-row>
 
       <template v-if="$vuetify.breakpoint.xsOnly">
-        <v-row class="align-center">
-          <v-col cols="auto">
-            <v-btn color="accent"
+        <v-row class="align-center action-buttons-row">
+          <v-col cols="auto" class="action-buttons-row__col">
+            <v-btn color="primary"
                    small
                    :title="$t('browse_book.read_book')"
                    :to="{name: readRouteName, params: { bookId: bookId}, query: { context: context.origin, contextId: context.id}}"
@@ -248,24 +249,25 @@
             </v-btn>
           </v-col>
 
-          <v-col cols="auto">
-            <v-btn small
-                   :title="$t('browse_book.read_incognito')"
-                   :to="{name: readRouteName, params: { bookId: bookId}, query: { context: context.origin, contextId: context.id, incognito: true}}"
-                   :disabled="!canRead"
+          <v-col cols="auto" class="action-buttons-row__col" v-if="isAdmin">
+            <v-btn color="error"
+                   small
+                   :title="$t('menu.delete')"
+                   @click="deleteBook"
             >
-              <v-icon left small>mdi-incognito</v-icon>
-              {{ $t('common.read') }}
+              <v-icon left small>mdi-delete</v-icon>
+              {{ $t('menu.delete') }}
             </v-btn>
           </v-col>
-
-          <v-col cols="auto">
-            <v-btn :title="$t('browse_book.download_file')"
+          <v-col cols="auto" class="action-buttons-row__col">
+            <v-btn color="primary"
                    small
-                   :disabled="!canDownload"
-                   :href="fileUrl">
-              <v-icon left small>mdi-file-download</v-icon>
-              {{ $t('common.download') }}
+                   :title="$t('browse_book.read_book')"
+                   :to="{name: readRouteName, params: { bookId: bookId}, query: { context: context.origin, contextId: context.id}}"
+                   :disabled="!canRead"
+            >
+              <v-icon left small>mdi-book-open-page-variant</v-icon>
+              {{ $t('common.read') }}
             </v-btn>
           </v-col>
         </v-row>
@@ -691,6 +693,9 @@ export default Vue.extend({
     editBook() {
       this.$store.dispatch('dialogUpdateBooks', this.book)
     },
+    deleteBook() {
+      this.$store.dispatch('dialogDeleteBook', this.book)
+    },
     removeFromReadList(readListId: string) {
       const rl = this.readLists.find(x => x.id == readListId)
       const modified = Object.assign({}, {bookIds: rl?.bookIds.filter(x => x != this.bookId)})
@@ -704,4 +709,17 @@ export default Vue.extend({
 </script>
 
 <style scoped>
+.action-buttons-row {
+  flex-wrap: nowrap !important;
+  gap: 8px;
+}
+.action-buttons-row__col {
+  flex: 1 1 0 !important;
+  max-width: none !important;
+  min-width: 0;
+}
+.action-buttons-row__col .v-btn {
+  width: 100%;
+  justify-content: center;
+}
 </style>
