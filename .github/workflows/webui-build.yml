@@ -1,0 +1,60 @@
+name: WebUI Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag (e.g. v1.2.3)'
+        required: true
+
+jobs:
+  build-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: komga-webui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: komga-webui
+        run: npm ci
+
+      - name: Build webui
+        working-directory: komga-webui
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
+        run: npm run build
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: komga-webui-dist
+          path: komga-webui/dist
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push nginx image serving dist
+        env:
+          IMAGE: wondersoap/komga
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          if [ -z "$TAG" ]; then
+            echo "TAG is required" >&2
+            exit 1
+          fi
+          docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" -f- . <<'EOF'
+          FROM nginx:stable-alpine
+          COPY komga-webui/dist/ /usr/share/nginx/html
+          EOF
+          docker push "$IMAGE:$TAG"
+          docker push "$IMAGE:latest"
