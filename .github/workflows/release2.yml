@@ -180,7 +180,7 @@ jobs:
   
       - name: JReleaser Publish (Docker)  
         if: inputs.docker_release  
-        run: ./gradlew jreleaserPublish  
+        run: ./gradlew jreleaserPublish -PdockerUser=wondersoap
         env:  
           JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
           
