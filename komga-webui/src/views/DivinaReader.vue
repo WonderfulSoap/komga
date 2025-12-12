@@ -30,7 +30,7 @@
           <v-btn
             icon
             :disabled="!screenfull.isEnabled"
-            @click="screenfull.isFullscreen ? screenfull.exit() : enterFullscreen()">
+            @click="screenfull.isFullscreen ? exitFullscreen() : enterFullscreen()">
             <v-icon>{{ fullscreenIcon }}</v-icon>
           </v-btn>
 
@@ -444,6 +444,7 @@ export default Vue.extend({
       viewportWidth: 0,
       viewportHeight: 0,
       resizeImages: true,
+      fullscreenExitRequestedByApp: false,
     }
   },
   created() {
@@ -492,7 +493,7 @@ export default Vue.extend({
     window.visualViewport?.removeEventListener('resize', this.updateViewportSize)
     if (screenfull.isEnabled) {
       screenfull.off('change', this.fullscreenChanged)
-      screenfull.exit()
+      this.exitFullscreen()
     }
   },
   props: {
@@ -676,7 +677,7 @@ export default Vue.extend({
         this.settings.alwaysFullscreen = alwaysFullscreen
         this.$store.commit('setWebreaderAlwaysFullscreen', alwaysFullscreen)
         if (alwaysFullscreen) this.enterFullscreen()
-        else screenfull.isEnabled && screenfull.exit()
+        else screenfull.isEnabled && this.exitFullscreen()
       },
     },
   },
@@ -684,12 +685,31 @@ export default Vue.extend({
     enterFullscreen() {
       if (screenfull.isEnabled) screenfull.request(document.documentElement, {navigationUI: 'hide'})
     },
+    exitFullscreen(appInitiated: boolean = true) {
+      if (!screenfull.isEnabled) return
+      if (!screenfull.isFullscreen) {
+        this.fullscreenExitRequestedByApp = false
+        return
+      }
+      this.fullscreenExitRequestedByApp = appInitiated
+      screenfull.exit()
+    },
     switchFullscreen() {
-      if (screenfull.isEnabled) screenfull.isFullscreen ? screenfull.exit() : this.enterFullscreen()
+      if (screenfull.isEnabled) screenfull.isFullscreen ? this.exitFullscreen() : this.enterFullscreen()
     },
     fullscreenChanged() {
-      if (screenfull.isEnabled && screenfull.isFullscreen) this.fullscreenIcon = 'mdi-fullscreen-exit'
-      else this.fullscreenIcon = 'mdi-fullscreen'
+      if (!screenfull.isEnabled) return
+      if (screenfull.isFullscreen) {
+        this.fullscreenIcon = 'mdi-fullscreen-exit'
+        this.fullscreenExitRequestedByApp = false
+      } else {
+        this.fullscreenIcon = 'mdi-fullscreen'
+        const triggeredByApp = this.fullscreenExitRequestedByApp
+        this.fullscreenExitRequestedByApp = false
+        if (!triggeredByApp) {
+          this.closeBook()
+        }
+      }
     },
     keyPressed(e: KeyboardEvent) {
       if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) return
@@ -866,7 +886,7 @@ export default Vue.extend({
       } as Location)
     },
     closeBook() {
-      this.$router.push(
+      this.$router.replace(
         {
           name: this.book.oneshot ? 'browse-oneshot' : 'browse-book',
           params: {bookId: this.bookId.toString(), seriesId: this.book.seriesId},
