@@ -11,10 +11,10 @@ on:
         description: Release notes (use \n for newlines)
         type: string
         required: false
-      github_release:
-        description: 'Create Github Release'
-        default: true
-        type: boolean
+      # github_release:
+      #   description: 'Create Github Release'
+      #   default: true
+      #   type: boolean
       docker_release:
         description: 'Push Docker images'
         default: true
