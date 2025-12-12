@@ -260,7 +260,7 @@ export default Vue.extend({
       this.width = computeCardWidth(
         content.clientWidth,
         this.$vuetify.breakpoint.name.toString(),
-        this.itemHorizontalMargin * 2
+        this.itemHorizontalMargin * 2,
       )
     },
     deleteItem(item: any) {
