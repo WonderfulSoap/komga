@@ -886,12 +886,15 @@ export default Vue.extend({
       } as Location)
     },
     closeBook() {
-      this.$router.replace(
-        {
-          name: this.book.oneshot ? 'browse-oneshot' : 'browse-book',
-          params: {bookId: this.bookId.toString(), seriesId: this.book.seriesId},
-          query: {context: this.context.origin, contextId: this.context.id},
-        })
+      if (window.history.length > 1) {
+        this.$router.back()
+        return
+      }
+      this.$router.replace({
+        name: this.book.oneshot ? 'browse-oneshot' : 'browse-book',
+        params: {bookId: this.bookId.toString(), seriesId: this.book.seriesId},
+        query: {context: this.context.origin, contextId: this.context.id},
+      })
     },
     changeReadingDir(dir: ReadingDirection) {
       this.readingDirection = dir
