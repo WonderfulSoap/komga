@@ -959,15 +959,17 @@ export default Vue.extend({
       }
     }, 50),
     downloadCurrentPage() {
+      const url = this.buildContentNegotiationUrl(this.currentPage.url)
       new jsFileDownloader({
-        url: `${this.currentPage.url}?contentNegotiation=false`,
+        url,
         filename: `${this.book.name}-${this.currentPage.number}.${this.currentPage.fileName.split('.').pop()}`,
         withCredentials: true,
         forceDesktopMode: true,
       })
     },
     async setCurrentPageAsPoster(type: ItemTypes) {
-      const imageFile = await getFileFromUrl(`${this.currentPage.url}?contentNegotiation=false`, 'poster', 'image/jpeg', {credentials: 'include'})
+      const url = this.buildContentNegotiationUrl(this.currentPage.url)
+      const imageFile = await getFileFromUrl(url, 'poster', 'image/jpeg', {credentials: 'include'})
       const newImageFile = await resizeImageFile(imageFile)
       switch (type) {
         case ItemTypes.BOOK:
@@ -983,6 +985,10 @@ export default Vue.extend({
           this.sendNotification(`${this.$t('bookreader.notification_poster_set_readlist')}`)
           break
       }
+    },
+    buildContentNegotiationUrl(url: string): string {
+      const separator = url.includes('?') ? '&' : '?'
+      return `${url}${separator}contentNegotiation=false`
     },
   },
 })

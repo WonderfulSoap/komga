@@ -2,7 +2,6 @@ package org.gotson.komga.infrastructure.image
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.coobird.thumbnailator.Thumbnails
-import org.gotson.komga.infrastructure.mediacontainer.ContentDetector
 import org.springframework.stereotype.Service
 import java.awt.Color
 import java.awt.image.BufferedImage
@@ -21,7 +20,6 @@ private const val WEBP_NIGHT_MONKEYS = "com.github.gotson.nightmonkeys.webp.imag
 @Service
 class ImageConverter(
   private val imageAnalyzer: ImageAnalyzer,
-  private val contentDetector: ContentDetector,
 ) {
   val supportedReadFormats by lazy { ImageIO.getReaderFormatNames().toList() }
   val supportedReadMediaTypes by lazy { ImageIO.getReaderMIMETypes().toList() }
@@ -146,11 +144,9 @@ class ImageConverter(
   ): Thumbnails.Builder<out InputStream>? {
     val longestEdge =
       imageAnalyzer.getDimension(imageBytes.inputStream())?.let {
-        val mediaType = contentDetector.detectMediaType(imageBytes.inputStream())
-        val longestEdge = max(it.height, it.width)
-        // don't resize if source and target format is the same, and source is smaller than desired
-        if (mediaType == format.mediaType && longestEdge <= size) return null
-        longestEdge
+        val value = max(it.height, it.width)
+        if (value <= size) return null
+        value
       }
 
     // prevent upscaling
@@ -169,9 +165,8 @@ class ImageConverter(
     width: Int,
   ): Thumbnails.Builder<out InputStream>? {
     val dimension = imageAnalyzer.getDimension(imageBytes.inputStream())
-    val mediaType = contentDetector.detectMediaType(imageBytes.inputStream())
 
-    if (dimension != null && mediaType == format.mediaType && dimension.width <= width) return null
+    if (dimension != null && dimension.width <= width) return null
 
     val target = dimension?.let { min(width, it.width) } ?: width
 
@@ -188,9 +183,8 @@ class ImageConverter(
     height: Int,
   ): Thumbnails.Builder<out InputStream>? {
     val dimension = imageAnalyzer.getDimension(imageBytes.inputStream())
-    val mediaType = contentDetector.detectMediaType(imageBytes.inputStream())
 
-    if (dimension != null && mediaType == format.mediaType && dimension.height <= height) return null
+    if (dimension != null && dimension.height <= height) return null
 
     val target = dimension?.let { min(height, it.height) } ?: height
 
