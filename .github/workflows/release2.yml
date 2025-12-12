@@ -39,10 +39,21 @@ jobs:
           # Remove 'v' prefix if present
           VERSION=${VERSION#v}
           # Validate version format (basic semver check)
-          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
-            echo "Error: Invalid version format. Expected format: x.y.z or vx.y.z"
+          # Allow: x.y.z, x.y.z-alpha, x.y.z-beta.1, etc.
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\.]+)?$ ]]; then
+            echo "Error: Invalid version format. Expected format: x.y.z or x.y.z-suffix"
+            echo "Examples: 1.2.3, 1.2.3-alpha, 1.2.3-beta.1, 1.2.3-rc.2"
+            echo "Note: Custom suffixes like '-my' are valid but may cause issues with JReleaser"
             exit 1
           fi
+
+          # Check if version has a pre-release suffix
+          if [[ $VERSION =~ -[a-zA-Z] ]]; then
+            echo "Warning: Version '$VERSION' contains a pre-release suffix"
+            echo "JReleaser may have issues parsing custom version formats"
+            echo "Consider using standard semver formats like: x.y.z-alpha.N, x.y.z-beta.N, x.y.z-rc.N"
+          fi
+
           echo "normalized_version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag_version=v$VERSION" >> $GITHUB_OUTPUT
           
@@ -81,6 +92,16 @@ jobs:
           echo "Current version: ${{ needs.version.outputs.version_current }}"
           echo "Release version: ${{ needs.version.outputs.version_next }}"
           echo "Should release: ${{ needs.version.outputs.should_release }}"
+
+      - name: Check current branch
+        run: |
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          echo "Current branch: $CURRENT_BRANCH"
+          if [[ "$CURRENT_BRANCH" != "master" && "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "develop" ]]; then
+            echo "Warning: You are releasing from branch '$CURRENT_BRANCH'"
+            echo "It's recommended to release from main/master/develop branch"
+            echo "You may need to merge your changes to the main branch first"
+          fi
 
       - name: Update version in gradle.properties
         if: needs.version.outputs.should_release
@@ -163,6 +184,31 @@ jobs:
       #     tag: 'v${{ needs.version.outputs.version_next }}'
       #     default_author: github_actions
 
+      - name: Pre-release checks
+        if: inputs.github_release
+        run: |
+          echo "=== Pre-release Checks ==="
+          echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+          echo "Current commit: $(git rev-parse HEAD)"
+          echo "Version: ${{ needs.version.outputs.version_next }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Repository owner: ${{ github.repository_owner }}"
+
+          # Check if we're on a feature branch
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          if [[ "$CURRENT_BRANCH" != "master" && "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "develop" ]]; then
+            echo "ERROR: Cannot create release from feature branch '$CURRENT_BRANCH'"
+            echo "Please merge to main/master/develop branch first, or skip GitHub release"
+            exit 1
+          fi
+
+          # Check if tag already exists
+          if git rev-parse "v${{ needs.version.outputs.version_next }}" >/dev/null 2>&1; then
+            echo "ERROR: Tag v${{ needs.version.outputs.version_next }} already exists"
+            echo "Please use a different version number or delete the existing tag"
+            exit 1
+          fi
+
       - name: JReleaser Release
         if: inputs.github_release
         run: ./gradlew jreleaserRelease
@@ -194,3 +240,18 @@ jobs:
           path: |
             build/jreleaser/trace.log
             build/jreleaser/output.properties
+
+# IMPORTANT NOTES:
+# 1. This workflow MUST be run from main/master/develop branch for GitHub releases
+#    - Feature branches will be rejected by the pre-release checks
+# 2. Version format MUST be standard semver: x.y.z or x.y.z-prerelease
+#    - Avoid custom suffixes like '-my' as JReleaser cannot parse them
+#    - Valid examples: 1.2.3, 1.2.3-alpha.1, 1.2.3-beta.2, 1.2.3-rc.1
+# 3. The version in gradle.properties will be automatically updated
+# 4. Tags must not already exist - the workflow will check and fail if tag exists
+# 5. Repository owner is auto-detected from GitHub context
+#
+# TROUBLESHOOTING:
+# - If you see "Cannot parse version" error: Use standard semver format
+# - If you see "feature branch" error: Merge to main/master first or disable GitHub release
+# - If you see "tag already exists" error: Use a new version number or delete the tag
