@@ -205,6 +205,11 @@ export default Vue.extend({
         width,
       }
     },
+    itemHorizontalMargin(): number {
+      const SPACING_UNIT = 4 // Vuetify spacing unit in px (mx-2 => 2 * 4px)
+      const HORIZONTAL_MARGIN_STEPS = 2
+      return SPACING_UNIT * HORIZONTAL_MARGIN_STEPS
+    },
     shouldPreselect(): boolean {
       return this.selectedItems.length > 0
     },
@@ -252,7 +257,11 @@ export default Vue.extend({
     },
     onResize() {
       const content = this.$refs.content as HTMLElement
-      this.width = computeCardWidth(content.clientWidth, this.$vuetify.breakpoint.name.toString())
+      this.width = computeCardWidth(
+        content.clientWidth,
+        this.$vuetify.breakpoint.name.toString(),
+        this.itemHorizontalMargin * 2
+      )
     },
     deleteItem(item: any) {
       const index = this.localItems.findIndex((e: any) => e.id === item.id)
