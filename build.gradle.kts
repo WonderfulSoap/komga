@@ -71,7 +71,7 @@ jreleaser {
   release {
     github {
       repoOwner = "wondersoap"
-      repoName = "komga"
+      name = "komga"
       discussionCategoryName = "Announcements"
       skipTag = true
       tagName = "{{projectVersion}}"
