@@ -697,8 +697,11 @@ export default Vue.extend({
     },
     updateViewportSize() {
       const viewport = window.visualViewport
-      const width = Math.floor(viewport?.width ?? window.innerWidth ?? 0)
-      const height = Math.floor(viewport?.height ?? window.innerHeight ?? 0)
+      const cssWidth = Math.floor(viewport?.width ?? window.innerWidth ?? 0)
+      const cssHeight = Math.floor(viewport?.height ?? window.innerHeight ?? 0)
+      const devicePixelRatio = window.devicePixelRatio || 1
+      const width = Math.floor(cssWidth * devicePixelRatio)
+      const height = Math.floor(cssHeight * devicePixelRatio)
       const changed = width !== this.viewportWidth || height !== this.viewportHeight
       this.viewportWidth = width
       this.viewportHeight = height
