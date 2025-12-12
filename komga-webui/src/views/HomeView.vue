@@ -9,7 +9,6 @@
         offset-y="20"
         :value="drawerVisible ? 0 : $store.state.booksToCheck + $store.getters.getUnreadAnnouncementsCount()"
         :color="$store.state.booksToCheck ? 'accent' : 'info'"
-        class="ms-n3"
       >
         <v-app-bar-nav-icon @click.stop="toggleDrawer"/>
       </v-badge>

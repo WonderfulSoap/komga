@@ -22,6 +22,7 @@
             :key="item.id"
             class="my-2 mx-2"
             v-slot:default="{ toggle, active }" :value="item"
+            :style="itemStyle"
           >
             <slot name="item">
               <div style="position: relative"
@@ -195,6 +196,14 @@ export default Vue.extend({
     },
     itemWidth(): number {
       return this.fixedItemWidth ? this.fixedItemWidth : this.width
+    },
+    itemStyle(): Record<string, string> {
+      const width = `${this.itemWidth}px`
+      return {
+        flex: `0 0 ${width}`,
+        maxWidth: width,
+        width,
+      }
     },
     shouldPreselect(): boolean {
       return this.selectedItems.length > 0
