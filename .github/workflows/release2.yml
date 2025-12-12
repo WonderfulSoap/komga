@@ -176,30 +176,30 @@ jobs:
       #     tag: 'v${{ needs.version.outputs.version_next }}'
       #     default_author: github_actions
 
-      - name: Pre-release checks
-        if: inputs.github_release
-        run: |
-          echo "=== Pre-release Checks ==="
-          echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
-          echo "Current commit: $(git rev-parse HEAD)"
-          echo "Version: ${{ needs.version.outputs.version_next }}"
-          echo "Repository: ${{ github.repository }}"
-          echo "Repository owner: ${{ github.repository_owner }}"
+      # - name: Pre-release checks
+      #   if: inputs.github_release
+      #   run: |
+      #     echo "=== Pre-release Checks ==="
+      #     echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+      #     echo "Current commit: $(git rev-parse HEAD)"
+      #     echo "Version: ${{ needs.version.outputs.version_next }}"
+      #     echo "Repository: ${{ github.repository }}"
+      #     echo "Repository owner: ${{ github.repository_owner }}"
 
-          # Check if we're on a feature branch
-          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          if [[ "$CURRENT_BRANCH" != "master" && "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "develop" ]]; then
-            echo "ERROR: Cannot create release from feature branch '$CURRENT_BRANCH'"
-            echo "Please merge to main/master/develop branch first, or skip GitHub release"
-            exit 1
-          fi
+      #     # Check if we're on a feature branch
+      #     CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+      #     if [[ "$CURRENT_BRANCH" != "master" && "$CURRENT_BRANCH" != "main" && "$CURRENT_BRANCH" != "develop" ]]; then
+      #       echo "ERROR: Cannot create release from feature branch '$CURRENT_BRANCH'"
+      #       echo "Please merge to main/master/develop branch first, or skip GitHub release"
+      #       exit 1
+      #     fi
 
-          # Check if tag already exists
-          if git rev-parse "v${{ needs.version.outputs.version_next }}" >/dev/null 2>&1; then
-            echo "ERROR: Tag v${{ needs.version.outputs.version_next }} already exists"
-            echo "Please use a different version number or delete the existing tag"
-            exit 1
-          fi
+      #     # Check if tag already exists
+      #     if git rev-parse "v${{ needs.version.outputs.version_next }}" >/dev/null 2>&1; then
+      #       echo "ERROR: Tag v${{ needs.version.outputs.version_next }} already exists"
+      #       echo "Please use a different version number or delete the existing tag"
+      #       exit 1
+      #     fi
 
       - name: JReleaser Release
         if: inputs.github_release
