@@ -201,20 +201,20 @@ jobs:
       #       exit 1
       #     fi
 
-      - name: JReleaser Release
-        if: inputs.github_release
-        run: ./gradlew jreleaserRelease
-        env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: JReleaser Release
+      #   if: inputs.github_release
+      #   run: ./gradlew jreleaserRelease
+      #   env:
+      #     JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: JReleaser Release output
-        if: always() && inputs.github_release
-        uses: actions/upload-artifact@v5
-        with:
-          name: jreleaser-release
-          path: |
-            build/jreleaser/trace.log
-            build/jreleaser/output.properties
+      # - name: JReleaser Release output
+      #   if: always() && inputs.github_release
+      #   uses: actions/upload-artifact@v5
+      #   with:
+      #     name: jreleaser-release
+      #     path: |
+      #       build/jreleaser/trace.log
+      #       build/jreleaser/output.properties
 
       - name: JReleaser Publish (Docker)
         if: inputs.docker_release
