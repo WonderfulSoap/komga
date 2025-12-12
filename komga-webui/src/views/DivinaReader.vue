@@ -77,7 +77,7 @@
                 <v-list-item-action>
                   <v-icon small>{{ resizeImages ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline' }}</v-icon>
                 </v-list-item-action>
-                <v-list-item-title>{{ resizeImages ? 'Disable resize' : 'Enable resize' }}</v-list-item-title>
+                <v-list-item-title>Resize image</v-list-item-title>
               </v-list-item>
             </v-list>
           </v-menu>
