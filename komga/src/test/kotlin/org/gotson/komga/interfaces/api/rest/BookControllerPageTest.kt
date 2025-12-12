@@ -3,6 +3,7 @@ package org.gotson.komga.interfaces.api.rest
 import com.ninjasquad.springmockk.MockkBean
 import com.ninjasquad.springmockk.SpykBean
 import io.mockk.every
+import io.mockk.verify
 import org.gotson.komga.domain.model.BookPage
 import org.gotson.komga.domain.model.Media
 import org.gotson.komga.domain.model.TypedBytes
@@ -22,6 +23,7 @@ import org.gotson.komga.domain.service.SeriesLifecycle
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -100,7 +102,7 @@ class BookControllerPageTest(
     }
 
     every { mockAnalyzer.getPageContentRaw(any(), 1) } returns TypedBytes(ByteArray(0), "application/pdf")
-    every { bookLifecycle.getBookPage(any(), 1, any(), any()) } returns TypedBytes(ByteArray(0), "image/jpeg")
+    every { bookLifecycle.getBookPage(any(), 1, any(), any(), any(), any()) } returns TypedBytes(ByteArray(0), "image/jpeg")
 
     mockMvc
       .get("/api/v1/books/${book.id}/pages/1") {
@@ -178,4 +180,67 @@ class BookControllerPageTest(
         "application/pdf",
       ),
     )
+
+  @Test
+  @WithMockCustomUser
+  fun `given both size params when getting page then returns bad request`() {
+    makeSeries(name = "series", libraryId = library.id).let { series ->
+      seriesLifecycle.createSeries(series).let { created ->
+        val books = listOf(makeBook("1", libraryId = library.id))
+        seriesLifecycle.addBooks(created, books)
+      }
+    }
+
+    val book = bookRepository.findAll().first()
+    mediaRepository.findById(book.id).let {
+      mediaRepository.update(
+        it.copy(
+          status = Media.Status.READY,
+          pages = listOf(BookPage("file", "image/jpeg")),
+        ),
+      )
+    }
+
+    mockMvc
+      .get("/api/v1/books/${book.id}/pages/1") {
+        param("size_x", "400")
+        param("size_y", "300")
+      }.andExpect {
+        status { isBadRequest() }
+      }
+  }
+
+  @Test
+  @WithMockCustomUser
+  fun `given size x param when getting page then forwards width to lifecycle`() {
+    makeSeries(name = "series", libraryId = library.id).let { series ->
+      seriesLifecycle.createSeries(series).let { created ->
+        val books = listOf(makeBook("1", libraryId = library.id))
+        seriesLifecycle.addBooks(created, books)
+      }
+    }
+
+    val book = bookRepository.findAll().first()
+    mediaRepository.findById(book.id).let {
+      mediaRepository.update(
+        it.copy(
+          status = Media.Status.READY,
+          pages = listOf(BookPage("file", "image/jpeg")),
+        ),
+      )
+    }
+
+    every { bookLifecycle.getBookPage(any(), 1, any(), any(), any(), any()) } returns TypedBytes(ByteArray(0), "image/jpeg")
+
+    mockMvc
+      .get("/api/v1/books/${book.id}/pages/1") {
+        param("size_x", "400")
+      }.andExpect {
+        status { isOk() }
+      }
+
+    verify(exactly = 1) {
+      bookLifecycle.getBookPage(any(), 1, any(), null, 400, null)
+    }
+  }
 }

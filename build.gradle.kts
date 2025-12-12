@@ -178,7 +178,6 @@ jreleaser {
         )
       registries {
         create("docker.io") { externalLogin = true }
-        create("ghcr.io") { externalLogin = true }
       }
       buildx {
         enabled = true

@@ -72,6 +72,13 @@
               <v-list-item v-if="contextReadList" @click="setCurrentPageAsPoster(ItemTypes.READLIST)">
                 <v-list-item-title>{{ $t('bookreader.set_current_page_as_readlist_poster') }}</v-list-item-title>
               </v-list-item>
+              <v-divider></v-divider>
+              <v-list-item @click="toggleImageResize">
+                <v-list-item-action>
+                  <v-icon small>{{ resizeImages ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline' }}</v-icon>
+                </v-list-item-action>
+                <v-list-item-title>{{ resizeImages ? 'Disable resize' : 'Enable resize' }}</v-list-item-title>
+              </v-list-item>
             </v-list>
           </v-menu>
         </v-toolbar>
@@ -434,6 +441,9 @@ export default Vue.extend({
         {text: this.$t('bookreader.settings.background_colors.gray').toString(), value: '#212121'},
         {text: this.$t('bookreader.settings.background_colors.black').toString(), value: 'black'},
       ],
+      viewportWidth: 0,
+      viewportHeight: 0,
+      resizeImages: true,
     }
   },
   created() {
@@ -467,6 +477,10 @@ export default Vue.extend({
     this.pageMargin = this.$store.state.persistedState.webreader.continuous.margin
     this.backgroundColor = this.$store.state.persistedState.webreader.background
 
+    this.updateViewportSize()
+    window.addEventListener('resize', this.updateViewportSize)
+    window.visualViewport?.addEventListener('resize', this.updateViewportSize)
+
     this.setup(this.bookId, Number(this.$route.query.page))
   },
   destroyed() {
@@ -474,6 +488,8 @@ export default Vue.extend({
 
     this.$vuetify.rtl = (this.$t('common.locale_rtl') === 'true')
     window.removeEventListener('keydown', this.keyPressed)
+    window.removeEventListener('resize', this.updateViewportSize)
+    window.visualViewport?.removeEventListener('resize', this.updateViewportSize)
     if (screenfull.isEnabled) {
       screenfull.off('change', this.fullscreenChanged)
       screenfull.exit()
@@ -679,6 +695,40 @@ export default Vue.extend({
       if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) return
       this.shortcuts[e.key]?.execute(this)
     },
+    updateViewportSize() {
+      const viewport = window.visualViewport
+      const width = Math.floor(viewport?.width ?? window.innerWidth ?? 0)
+      const height = Math.floor(viewport?.height ?? window.innerHeight ?? 0)
+      const changed = width !== this.viewportWidth || height !== this.viewportHeight
+      this.viewportWidth = width
+      this.viewportHeight = height
+      if (changed) {
+        this.refreshPageUrls()
+      }
+    },
+    getResizeParams(): { sizeX?: number, sizeY?: number } {
+      if (!this.resizeImages) return {}
+      const width = Math.floor(this.viewportWidth || 0)
+      const height = Math.floor(this.viewportHeight || 0)
+      if (width <= 0 && height <= 0) return {}
+      if (width <= 0) return height > 0 ? {sizeY: height} : {}
+      if (height <= 0) return width > 0 ? {sizeX: width} : {}
+      if (width <= height) {
+        return {sizeX: width}
+      } else {
+        return {sizeY: height}
+      }
+    },
+    refreshPageUrls() {
+      if (!this.pages || this.pages.length === 0) return
+      this.pages.forEach((page) => {
+        page.url = this.getPageUrl(page)
+      })
+    },
+    toggleImageResize() {
+      this.resizeImages = !this.resizeImages
+      this.refreshPageUrls()
+    },
     async setup(bookId: string, page?: number) {
       this.$debug('[setup]', `bookId:${bookId}`, `page:${page}`)
       this.book = await this.$komgaBooks.getBook(bookId)
@@ -746,10 +796,11 @@ export default Vue.extend({
       }
     },
     getPageUrl(page: PageDto): string {
+      const {sizeX, sizeY} = this.getResizeParams()
       if (!this.supportedMediaTypes.includes(page.mediaType)) {
-        return bookPageUrl(this.bookId, page.number, this.convertTo)
+        return bookPageUrl(this.bookId, page.number, this.convertTo, sizeX, sizeY)
       } else {
-        return bookPageUrl(this.bookId, page.number)
+        return bookPageUrl(this.bookId, page.number, undefined, sizeX, sizeY)
       }
     },
     jumpToPrevious() {

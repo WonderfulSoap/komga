@@ -26,12 +26,20 @@ export function bookFileUrl(bookId: string): string {
   return `${urls.originNoSlash}/api/v1/books/${bookId}/file`
 }
 
-export function bookPageUrl(bookId: string, page: number, convertTo?: string): string {
-  let url = `${urls.originNoSlash}/api/v1/books/${bookId}/pages/${page}`
+export function bookPageUrl(bookId: string, page: number, convertTo?: string, sizeX?: number, sizeY?: number): string {
+  const params = new URLSearchParams()
   if (convertTo) {
-    url += `?convert=${convertTo}`
+    params.append('convert', convertTo)
   }
-  return url
+  if (sizeX) {
+    params.append('size_x', sizeX.toString())
+  }
+  if (sizeY) {
+    params.append('size_y', sizeY.toString())
+  }
+
+  const query = params.toString()
+  return query ? `${urls.originNoSlash}/api/v1/books/${bookId}/pages/${page}?${query}` : `${urls.originNoSlash}/api/v1/books/${bookId}/pages/${page}`
 }
 
 export function bookPageThumbnailUrl(bookId: string, page: number): string {

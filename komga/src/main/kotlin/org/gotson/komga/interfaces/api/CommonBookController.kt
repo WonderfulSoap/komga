@@ -135,6 +135,8 @@ class CommonBookController(
     request: ServletWebRequest,
     principal: KomgaPrincipal,
     acceptHeaders: MutableList<MediaType>?,
+    sizeX: Int? = null,
+    sizeY: Int? = null,
   ) = bookRepository.findByIdOrNull((bookId))?.let { book ->
     val media = mediaRepository.findById(bookId)
     if (request.checkNotModified(getBookLastModified(media))) {
@@ -145,6 +147,18 @@ class CommonBookController(
     }
 
     contentRestrictionChecker.checkContentRestriction(principal.user, book)
+
+    val resizeWidth =
+      sizeX?.also {
+        if (it <= 0) throw ResponseStatusException(HttpStatus.BAD_REQUEST, "size_x must be positive")
+      }
+    val resizeHeight =
+      sizeY?.also {
+        if (it <= 0) throw ResponseStatusException(HttpStatus.BAD_REQUEST, "size_y must be positive")
+      }
+    if (resizeWidth != null && resizeHeight != null) {
+      throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Only one of size_x or size_y can be provided")
+    }
 
     if (media.profile == MediaProfile.PDF && acceptHeaders != null && acceptHeaders.any { it.isCompatibleWith(MediaType.APPLICATION_PDF) }) {
       // keep only pdf and image
@@ -163,7 +177,14 @@ class CommonBookController(
           else -> throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid conversion format: $convertTo")
         }
 
-      val pageContent = bookLifecycle.getBookPage(book, pageNumber, convertFormat)
+      val pageContent =
+        bookLifecycle.getBookPage(
+          book,
+          pageNumber,
+          convertFormat,
+          resizeToWidth = resizeWidth,
+          resizeToHeight = resizeHeight,
+        )
 
       ResponseEntity
         .ok()

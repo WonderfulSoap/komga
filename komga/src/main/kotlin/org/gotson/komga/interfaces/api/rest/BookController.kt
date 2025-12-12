@@ -490,7 +490,22 @@ class BookController(
     acceptHeaders: MutableList<MediaType>?,
     @RequestParam(value = "contentNegotiation", defaultValue = "true")
     contentNegotiation: Boolean,
-  ): ResponseEntity<ByteArray> = commonBookController.getBookPageInternal(bookId, if (zeroBasedIndex) pageNumber + 1 else pageNumber, convertTo, request, principal, if (contentNegotiation) acceptHeaders else null)
+    @Parameter(description = "Resize the image to the specified width (size_x) or height (size_y). Only one may be set.")
+    @RequestParam(value = "size_x", required = false)
+    sizeX: Int?,
+    @RequestParam(value = "size_y", required = false)
+    sizeY: Int?,
+  ): ResponseEntity<ByteArray> =
+    commonBookController.getBookPageInternal(
+      bookId,
+      if (zeroBasedIndex) pageNumber + 1 else pageNumber,
+      convertTo,
+      request,
+      principal,
+      if (contentNegotiation) acceptHeaders else null,
+      sizeX = sizeX,
+      sizeY = sizeY,
+    )
 
   @Operation(summary = "Get book page thumbnail", description = "The image is resized to 300px on the largest dimension.", tags = [OpenApiConfiguration.TagNames.BOOK_PAGES])
   @ApiResponse(content = [Content(schema = Schema(type = "string", format = "binary"))])

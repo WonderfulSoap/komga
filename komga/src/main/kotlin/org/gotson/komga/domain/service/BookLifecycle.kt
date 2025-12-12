@@ -313,51 +313,90 @@ class BookLifecycle(
     number: Int,
     convertTo: ImageType? = null,
     resizeTo: Int? = null,
+    resizeToWidth: Int? = null,
+    resizeToHeight: Int? = null,
   ): TypedBytes {
     val media = mediaRepository.findById(book.id)
     val pageContent = bookAnalyzer.getPageContent(BookWithMedia(book, media), number)
-    val pageMediaType =
+    var resultBytes = pageContent
+    var pageMediaType =
       if (media.profile == MediaProfile.PDF)
         pdfImageType.mediaType
       else
         media.pages[number - 1].mediaType
 
-    if (resizeTo != null) {
-      val convertedPage =
-        try {
-          imageConverter.resizeImageToByteArray(pageContent, resizeTargetFormat, resizeTo)
-        } catch (e: Exception) {
-          logger.error(e) { "Resize page #$number of book $book to $resizeTo: failed" }
-          throw e
-        }
-      return TypedBytes(convertedPage, resizeTargetFormat.mediaType)
-    } else {
-      convertTo?.let {
-        val msg = "Convert page #$number of book $book from $pageMediaType to ${it.mediaType}"
-        if (!imageConverter.supportedReadMediaTypes.contains(pageMediaType)) {
-          throw ImageConversionException("$msg: unsupported read format $pageMediaType")
-        }
-        if (!imageConverter.supportedWriteMediaTypes.contains(it.mediaType)) {
-          throw ImageConversionException("$msg: unsupported write format ${it.mediaType}")
-        }
-        if (pageMediaType == it.mediaType) {
-          logger.warn { "$msg: same format, no need for conversion" }
-          return@let
-        }
+    if (resizeTo != null && (resizeToWidth != null || resizeToHeight != null)) {
+      logger.warn { "Ignoring resizeTo parameter because width/height specific resize is requested" }
+    }
 
-        logger.info { msg }
-        val convertedPage =
+    when {
+      resizeTo != null -> {
+        val resized =
           try {
-            imageConverter.convertImage(pageContent, it.imageIOFormat)
+            imageConverter.resizeImageToByteArray(resultBytes, resizeTargetFormat, resizeTo)
           } catch (e: Exception) {
-            logger.error(e) { "$msg: conversion failed" }
+            logger.error(e) { "Resize page #$number of book $book to $resizeTo: failed" }
             throw e
           }
-        return TypedBytes(convertedPage, it.mediaType)
+        if (resized !== resultBytes) {
+          resultBytes = resized
+          pageMediaType = resizeTargetFormat.mediaType
+        }
+      }
+      resizeToWidth != null -> {
+        val resized =
+          try {
+            imageConverter.resizeImageToWidth(resultBytes, resizeTargetFormat, resizeToWidth)
+          } catch (e: Exception) {
+            logger.error(e) { "Resize page #$number of book $book to width $resizeToWidth: failed" }
+            throw e
+          }
+        if (resized !== resultBytes) {
+          resultBytes = resized
+          pageMediaType = resizeTargetFormat.mediaType
+        }
+      }
+      resizeToHeight != null -> {
+        val resized =
+          try {
+            imageConverter.resizeImageToHeight(resultBytes, resizeTargetFormat, resizeToHeight)
+          } catch (e: Exception) {
+            logger.error(e) { "Resize page #$number of book $book to height $resizeToHeight: failed" }
+            throw e
+          }
+        if (resized !== resultBytes) {
+          resultBytes = resized
+          pageMediaType = resizeTargetFormat.mediaType
+        }
+      }
+    }
+
+    convertTo?.let {
+      val msg = "Convert page #$number of book $book from $pageMediaType to ${it.mediaType}"
+      if (!imageConverter.supportedReadMediaTypes.contains(pageMediaType)) {
+        throw ImageConversionException("$msg: unsupported read format $pageMediaType")
+      }
+      if (!imageConverter.supportedWriteMediaTypes.contains(it.mediaType)) {
+        throw ImageConversionException("$msg: unsupported write format ${it.mediaType}")
+      }
+      if (pageMediaType == it.mediaType) {
+        logger.warn { "$msg: same format, no need for conversion" }
+        return@let
       }
 
-      return TypedBytes(pageContent, pageMediaType)
+      logger.info { msg }
+      val convertedPage =
+        try {
+          imageConverter.convertImage(resultBytes, it.imageIOFormat)
+        } catch (e: Exception) {
+          logger.error(e) { "$msg: conversion failed" }
+          throw e
+        }
+      resultBytes = convertedPage
+      pageMediaType = it.mediaType
     }
+
+    return TypedBytes(resultBytes, pageMediaType)
   }
 
   fun deleteOne(book: Book) {

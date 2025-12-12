@@ -103,6 +103,32 @@ class ImageConverter(
     }
   }
 
+  fun resizeImageToWidth(
+    imageBytes: ByteArray,
+    format: ImageType,
+    width: Int,
+  ): ByteArray {
+    val builder = resizeImageBuilderWidth(imageBytes, format, width) ?: return imageBytes
+
+    return ByteArrayOutputStream().use {
+      builder.toOutputStream(it)
+      it.toByteArray()
+    }
+  }
+
+  fun resizeImageToHeight(
+    imageBytes: ByteArray,
+    format: ImageType,
+    height: Int,
+  ): ByteArray {
+    val builder = resizeImageBuilderHeight(imageBytes, format, height) ?: return imageBytes
+
+    return ByteArrayOutputStream().use {
+      builder.toOutputStream(it)
+      it.toByteArray()
+    }
+  }
+
   fun resizeImageToBufferedImage(
     imageBytes: ByteArray,
     format: ImageType,
@@ -133,6 +159,44 @@ class ImageConverter(
     return Thumbnails
       .of(imageBytes.inputStream())
       .size(resizeTo, resizeTo)
+      .imageType(BufferedImage.TYPE_INT_ARGB)
+      .outputFormat(format.imageIOFormat)
+  }
+
+  private fun resizeImageBuilderWidth(
+    imageBytes: ByteArray,
+    format: ImageType,
+    width: Int,
+  ): Thumbnails.Builder<out InputStream>? {
+    val dimension = imageAnalyzer.getDimension(imageBytes.inputStream())
+    val mediaType = contentDetector.detectMediaType(imageBytes.inputStream())
+
+    if (dimension != null && mediaType == format.mediaType && dimension.width <= width) return null
+
+    val target = dimension?.let { min(width, it.width) } ?: width
+
+    return Thumbnails
+      .of(imageBytes.inputStream())
+      .width(target)
+      .imageType(BufferedImage.TYPE_INT_ARGB)
+      .outputFormat(format.imageIOFormat)
+  }
+
+  private fun resizeImageBuilderHeight(
+    imageBytes: ByteArray,
+    format: ImageType,
+    height: Int,
+  ): Thumbnails.Builder<out InputStream>? {
+    val dimension = imageAnalyzer.getDimension(imageBytes.inputStream())
+    val mediaType = contentDetector.detectMediaType(imageBytes.inputStream())
+
+    if (dimension != null && mediaType == format.mediaType && dimension.height <= height) return null
+
+    val target = dimension?.let { min(height, it.height) } ?: height
+
+    return Thumbnails
+      .of(imageBytes.inputStream())
+      .height(target)
       .imageType(BufferedImage.TYPE_INT_ARGB)
       .outputFormat(format.imageIOFormat)
   }
